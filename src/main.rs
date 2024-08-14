@@ -2,8 +2,11 @@ use proxy::{ProxyAgentSide, ProxyVisitorSide};
 use std::fmt::Debug;
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt};
 
+mod commu_client_subprocess;
+mod commu_client_webterminal;
+mod commu_server;
 mod proxy;
-mod subprocess;
+mod stream;
 
 trait Endpoint {
     type RxStream: 'static + AsyncRead + Send + Unpin;
@@ -16,31 +19,31 @@ async fn main() {
     // arg should be one
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
-        eprintln!("Usage: {} <subprocess_server|subprocess_client>", args[0]);
+        eprintln!("Usage: {} <commu_server|commu_client>", args[0]);
         std::process::exit(1);
     }
 
     match args[1].as_str() {
-        "subprocess_server" => {
-            let server = subprocess::SubprocessServerSide::new();
+        "commu_server" => {
+            let server = commu_server::SubprocessServerSide::new();
             let (rx, tx) = server.start().await;
-            // handle_recv_and_send("subprocess_server".to_string(), rx, tx).await;
-            ProxyAgentSide::new("127.0.0.1:22")
-                .await
-                .run_with(rx, tx)
-                .await;
+            handle_recv_and_send("commu_server".to_string(), rx, tx).await;
+            // ProxyAgentSide::new("127.0.0.1:22")
+            //     .await
+            //     .run_with(rx, tx)
+            //     .await;
         }
-        "subprocess_client" => {
-            let client = subprocess::SubprocessClientSide::new();
+        "commu_client" => {
+            let client = commu_client_webterminal::CommuClientSideWebterminal::new();
             let (rx, tx) = client.start().await;
             ProxyVisitorSide::new("127.0.0.1:2233")
                 .await
                 .run_with(rx, tx)
                 .await;
-            // handle_recv_and_send("subprocess_client".to_string(), rx, tx).await;
+            // handle_recv_and_send("commu_client".to_string(), rx, tx).await;
         }
         _ => {
-            eprintln!("Usage: {} <subprocess_server|subprocess_client>", args[0]);
+            eprintln!("Usage: {} <commu_server|commu_client>", args[0]);
             std::process::exit(1);
         }
     }
@@ -90,10 +93,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_msg_trans_complete() {
-        let server = subprocess::SubprocessServerSide::new();
+        let server = commu_server::SubprocessServerSide::new();
         let (rx, mut tx) = server.start().await;
         let mut rx = tokio::io::BufReader::new(rx);
-        let client = subprocess::SubprocessClientSide::new();
+        let client = commu_client_subprocess::CommuClientSideSubprocess::new();
         let (rx2, mut tx2) = client.start().await;
         let mut rx2 = tokio::io::BufReader::new(rx2);
         // generate 4000 bytes

@@ -5,8 +5,6 @@ use tokio::{
     net::TcpListener,
 };
 
-use crate::subprocess::{ReceiverStream, SenderStream};
-
 // listen for incoming connections, and forward them to the remote server
 pub struct ProxyVisitorSide {
     listener: TcpListener,

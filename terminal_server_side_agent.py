@@ -54,7 +54,7 @@ async def receive_from_websocket(websocket):
         print("recv: ", response)
         print2(base64.b64encode(response).decode('utf-8')+"\n")
 
-async def main():
+async def start_ws():
     uri = "ws://127.0.0.1:8087"  # 替换为你的 WebSocket 服务器 URL
     async with websockets.connect(uri) as websocket:
         builtins.print=log
@@ -64,6 +64,9 @@ async def main():
             read_stdin(websocket),
             receive_from_websocket(websocket)
         )
+
+async def main():
+    await start_ws()
 
 # 运行异步事件循环
 asyncio.run(main())
