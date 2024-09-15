@@ -1,0 +1,9 @@
+# pip websockets
+
+（arm）
+https://files.pythonhosted.org/packages/7f/2a/f78460d15487fccedec68660d6f28ef939c099e9768f291b8aa75607d60d/websockets-10.0-cp37-cp37m-manylinux2014_aarch64.whl
+
+
+# 编译ssh服务端侧
+
+cargo build --target x86_64-unknown-linux-gnu

@@ -1,7 +1,9 @@
+use commu_client_securecrt::CommuClientSideSecureCrt;
+use commu_client_webterminal::CommuClientSideWebterminal;
 use proxy::{ProxyAgentSide, ProxyVisitorSide};
-use std::fmt::Debug;
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt};
 
+mod commu_client_securecrt;
 mod commu_client_subprocess;
 mod commu_client_webterminal;
 mod commu_server;
@@ -27,14 +29,14 @@ async fn main() {
         "commu_server" => {
             let server = commu_server::SubprocessServerSide::new();
             let (rx, tx) = server.start().await;
-            handle_recv_and_send("commu_server".to_string(), rx, tx).await;
-            // ProxyAgentSide::new("127.0.0.1:22")
-            //     .await
-            //     .run_with(rx, tx)
-            //     .await;
+            // handle_recv_and_send("commu_server".to_string(), rx, tx).await;
+            ProxyAgentSide::new("127.0.0.1:22")
+                .await
+                .run_with(rx, tx)
+                .await;
         }
         "commu_client" => {
-            let client = commu_client_webterminal::CommuClientSideWebterminal::new();
+            let client = CommuClientSideWebterminal::new();
             let (rx, tx) = client.start().await;
             ProxyVisitorSide::new("127.0.0.1:2233")
                 .await

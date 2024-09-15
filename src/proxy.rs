@@ -62,25 +62,44 @@ impl ProxyVisitorSide {
         T: 'static + AsyncWrite + Send + Unpin,
         R: 'static + AsyncRead + Send + Unpin,
     {
-        // loop {
-        let (stream, _) = self.listener.accept().await.unwrap();
-        let (mut reader, mut writer) = stream.into_split();
+        let mut tx_binder = Some(tx);
+        let mut rx_binder = Some(rx);
+        loop {
+            let tx: T = tx_binder.take().unwrap();
+            let mut rx: R = rx_binder.take().unwrap();
+            let (stream, _) = self.listener.accept().await.unwrap();
+            let (mut read_tcp, mut write_back_2_tcp) = stream.into_split();
+            println!("\n>>> new tcp connection");
 
-        let t1 = tokio::spawn(async move {
-            let mut logging = LoggingWriter::new("->visitor".to_owned(), tx);
-            tokio::io::copy(&mut reader, &mut logging).await.unwrap();
-            println!("end forward to this visitor");
-        });
+            let (tcp_done_tx, tcp_done_rx) = tokio::sync::oneshot::channel();
+            let t1 = tokio::spawn(async move {
+                let mut logging = LoggingWriter::new("->visitor".to_owned(), tx);
+                tokio::io::copy(&mut read_tcp, &mut logging).await.unwrap();
+                println!(">>> end forward tcp to terminal");
+                tcp_done_tx.send(()).unwrap_or_else(|err| {
+                    panic!("{:?}", err);
+                });
+                logging.inner
+            });
 
-        let t2 = tokio::spawn(async move {
-            let mut logging = LoggingWriter::new("visitor->".to_owned(), writer);
-            tokio::io::copy(&mut rx, &mut logging).await.unwrap();
-            print!("end forward to remote agent");
-        });
+            let t2 = tokio::spawn(async move {
+                let mut logging = LoggingWriter::new("visitor->".to_owned(), write_back_2_tcp);
+                tokio::select! {
+                    _=tokio::io::copy(&mut rx, &mut logging)=>{
+                        println!(">>> end forward response to tcp by webterminal agent script");
+                    },
+                    _=tcp_done_rx=>{
+                        println!(">>> end forward response to tcp by tcp");
+                    }
+                };
+                rx
+            });
 
-        t1.await.unwrap();
-        t2.await.unwrap();
-        // }
+            tx_binder = Some(t1.await.unwrap_or_else(|e| {
+                panic!("{:?}", e);
+            }));
+            rx_binder = Some(t2.await.unwrap());
+        }
     }
 }
 

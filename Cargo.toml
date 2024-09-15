@@ -16,3 +16,6 @@ base64 = "0.22.1"
 futures = "0.3.30"
 tokio-codec = "0.1.0"
 rand = "0.8.4"
+hyper = { version = "1", features = ["full"] }
+http-body-util = "0.1"
+hyper-util = { version = "0.1", features = ["full"] }

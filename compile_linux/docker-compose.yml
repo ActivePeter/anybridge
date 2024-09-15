@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  rust-dev:
+    image: compile_anybridge
+    volumes:
+      - ../:/app  # 将当前目录挂载到容器内的 /app 目录
+    working_dir: /app  # 设置容器内的工作目录
+    # stdin_open: true  # 打开标准输入，使得容器可以在前台运行
+    # tty: true  # 分配一个伪TTY，这样可以处理中断信号
+    command: cargo build --release

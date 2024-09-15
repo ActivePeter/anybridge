@@ -1,0 +1,1 @@
+docker build -t compile_anybridge .

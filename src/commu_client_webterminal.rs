@@ -40,7 +40,7 @@ impl Endpoint for CommuClientSideWebterminal {
 
     async fn start(&self) -> (Self::RxStream, Self::TxStream) {
         // Create a TCP listener on port 8087
-        let addr = "127.0.0.1:8088";
+        let addr = "127.0.0.1:8091";
         let listener = TcpListener::bind(addr).await.unwrap();
         println!("WebSocket server listening on ws://{}", addr);
 
@@ -74,11 +74,18 @@ impl Endpoint for CommuClientSideWebterminal {
                                     Message::Pong(_) => {
                                         continue;
                                     }
-                                    Message::Close(_) => todo!(),
+                                    Message::Close(_) => {
+                                        println!(">>> commu client agent side: recv ws close");
+                                        break;
+                                    }
                                 };
+                                if binary.is_empty() {
+                                    continue;
+                                }
                                 println!(
-                                    "server recv {:?}",
-                                    std::str::from_utf8(binary.as_slice())
+                                    "read crt -> proxied tcp, str:{:?}, bin:{:?}",
+                                    std::str::from_utf8(binary.as_slice()),
+                                    binary.as_slice()
                                 );
                                 recv_remote_tx
                                     .send(binary)
